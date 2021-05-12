@@ -1,0 +1,19 @@
+{
+  "providerId": "Microsoft.Tools.ServiceModel.Svcutil",
+  "version": "2.0.2",
+  "options": {
+    "inputs": [
+      "../../Resource_Management.wsdl"
+    ],
+    "namespaceMappings": [
+      "*, UWD.Lib"
+    ],
+    "outputFile": "Reference.cs",
+    "references": [
+      "/Users/cliff/vcs/UWD/UWD.Lib/UWD.Lib.csproj"
+    ],
+    "serializerMode": "XmlSerializer",
+    "targetFramework": "netcoreapp3.1",
+    "typeReuseMode": "Specified"
+  }
+}
