@@ -8,8 +8,11 @@ namespace UWDiff
 {
     public class ClientExtractor
     {
-        public ClientExtractor()
+        readonly IEnumerable<TypeDisagreement> disagreements;
+
+        public ClientExtractor(IEnumerable<TypeDisagreement> disagreements)
         {
+            this.disagreements = disagreements;
         }
 
         public ClientContent Extract(string path)
@@ -28,6 +31,23 @@ namespace UWDiff
                 }
 
                 var stripped = current.Trim();
+
+                //capture Input Output wrappers
+                if (stripped.StartsWith("public partial class") &&
+                    stripped.EndsWithEither("Input", "Output"))
+                {
+                    var prev = lines[i - 1].Trim();
+                    if (!prev.Equals("[System.ServiceModel.MessageContractAttribute(IsWrapped=false)]"))
+                    {
+                        continue;
+                    }
+                    var (resume, typedef) = ExtractClass(i, lines);
+                    i = resume;
+                    content.Types.Add(typedef);
+                    continue;
+                }
+
+                //capture interface
                 if (stripped.StartsWith("public interface"))
                 {
                     var (resume, typedef) = ExtractInterface(i, lines);
@@ -36,7 +56,9 @@ namespace UWDiff
                     continue;
                 }
 
-                if (stripped.StartsWith("public partial class") && stripped.Contains("ClientBase<"))
+                // capture client
+                if (stripped.StartsWith("public partial class") &&
+                    stripped.Contains("ClientBase<"))
                 {
                     var (resume, typedef) = ExtractClass(i, lines);
                     i = resume;
@@ -64,7 +86,8 @@ namespace UWDiff
             return rev;
         }
 
-        (int, TypeDefinition) ExtractClass(int i, string[] lines)
+        // Extracts a complete class definition for classes derived from ClientBase
+        (int, TypeDefinition) ExtractClass(int i, string[] lines, bool enforcePascal = false)
         {
             var rev = RewindToStart(i, lines);
             var start = rev;
@@ -90,7 +113,7 @@ namespace UWDiff
                     continue;
                 }
 
-                if (trimmed.StartsWith("public partial class") && trimmed.Contains("ClientBase<"))
+                if (trimmed.StartsWith("public partial class"))
                 {
                     definition.Add(lines[rev]);
                     rev++;
@@ -121,6 +144,13 @@ namespace UWDiff
                 {
                     brackets--;
                 }
+
+                // if enforcePascal, then issue the correction here first
+                if (enforcePascal)
+                {
+                    //lines[rev] = 
+                }
+
                 definition.Add(lines[rev]);
                 rev++;
             }
@@ -136,6 +166,7 @@ namespace UWDiff
             });
         }
 
+        // Extracts a complete definition for public interfaces
         (int, TypeDefinition) ExtractInterface(int i, string[] lines)
         {
             var rev = RewindToStart(i, lines);
@@ -252,5 +283,13 @@ namespace UWDiff
         public int Start { get; set; }
         public int End { get; set; }
         public IEnumerable<string> Lines { get; set; }
+    }
+
+    static class StringExtensions
+    {
+        public static bool EndsWithEither(this string test, params string[] endings)
+        {
+            return endings.Any(e => test.EndsWith(e));
+        }
     }
 }

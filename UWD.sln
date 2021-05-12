@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UWD.Lib", "UWD.Lib\UWD.Lib.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UWDiff", "UWDiff\UWDiff.csproj", "{17650494-3ABF-4072-B57A-500360F48A99}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WDTest", "WDTest\WDTest.csproj", "{02DDB88B-275B-4644-A12F-9D326F6A25BA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{17650494-3ABF-4072-B57A-500360F48A99}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{17650494-3ABF-4072-B57A-500360F48A99}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{17650494-3ABF-4072-B57A-500360F48A99}.Release|Any CPU.Build.0 = Release|Any CPU
+		{02DDB88B-275B-4644-A12F-9D326F6A25BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{02DDB88B-275B-4644-A12F-9D326F6A25BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{02DDB88B-275B-4644-A12F-9D326F6A25BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{02DDB88B-275B-4644-A12F-9D326F6A25BA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

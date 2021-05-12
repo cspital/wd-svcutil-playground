@@ -18,11 +18,13 @@ namespace UWDiff
 
             handler.Handler = CommandHandler.Create<string>(d =>
             {
-                var extractor = new ClientExtractor();
+                var tdpar = new TypeDisagreementParser();
+                var tds = tdpar.Parse(MustPath(d, "UWD.Lib.cs"));
 
-                var client = extractor.Extract(MustPath(d, "Service/Reference.cs"));
+                var r = new RoslynClientExtractor(tds);
+                var service = r.Extract(MustPath(d, "Service/Reference.cs"));
 
-                Console.WriteLine(client);
+                Console.WriteLine(service.ToString());
             });
 
             handler.Invoke(args);
@@ -36,6 +38,11 @@ namespace UWDiff
                 throw new FileNotFoundException("Could not find file", comb);
             }
             return comb;
+        }
+
+        static string Ser(object o)
+        {
+            return JsonSerializer.Serialize(o);
         }
     }
 }

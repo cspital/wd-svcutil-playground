@@ -16,9 +16,9 @@ namespace UWDiff
         public IEnumerable<ClassDeclaration> Parse(string path)
         {
             var num = 0;
+            var file = Path.GetFileName(path);
             foreach (var line in  File.ReadLines(path))
             {
-                var file = Path.GetFileName(path);
                 num++;
                 var stripped = line.TrimStart();
                 if (stripped.StartsWith("public partial class"))

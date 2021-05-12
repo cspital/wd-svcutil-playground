@@ -9,4 +9,10 @@
     <PackageReference Include="System.ServiceModel.NetTcp" Version="4.6.*" />
     <PackageReference Include="System.ServiceModel.Security" Version="4.6.*" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Service\Reference.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Service\Reference.cs" Condition=" '$(EnableDefaultCompileItems)' == 'true' " />
+  </ItemGroup>
 </Project>
