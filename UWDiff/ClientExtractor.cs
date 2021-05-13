@@ -1,265 +1,135 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
-using System.Text;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.IO;
+using System.Linq;
+using System.Text;
 
 namespace UWDiff
 {
     public class ClientExtractor
     {
+        readonly CSharpSyntaxRewriter rewriter;
+
+        public ClientExtractor(CSharpSyntaxRewriter rewriter)
+        {
+            this.rewriter = rewriter;
+        }
+
+        public ServiceFile Extract(string path)
+        {
+            var tree = CSharpSyntaxTree.ParseText(File.ReadAllText(path));
+            var root = tree.GetRoot();
+
+            if (rewriter != null)
+            {
+                root = rewriter.Visit(root);
+            }
+
+            var ns = root
+                .DescendantNodes()
+                .OfType<NamespaceDeclarationSyntax>()
+                .First();
+
+            var classes = root
+                .DescendantNodes()
+                .OfType<ClassDeclarationSyntax>()
+                .Where(c =>
+                {
+                    if (c.Identifier.Text.EndsWithEither("Input", "Output"))
+                    {
+                        return true;
+                    }
+
+                    return c.BaseList?.Types.Any(b => b.Type.ToFullString().Contains("ClientBase<")) ?? false;
+                });
+
+            var ifaces = root
+                .DescendantNodes()
+                .OfType<InterfaceDeclarationSyntax>();
+
+            return new ServiceFile
+            {
+                Namespace = ns,
+                Types = ((IEnumerable<CSharpSyntaxNode>)classes).Concat(ifaces)
+            };
+        }
+    }
+
+    public class DisagreementRewriter : CSharpSyntaxRewriter
+    {
         readonly IEnumerable<TypeDisagreement> disagreements;
 
-        public ClientExtractor(IEnumerable<TypeDisagreement> disagreements)
+        public DisagreementRewriter(IEnumerable<TypeDisagreement> disagreements)
         {
             this.disagreements = disagreements;
         }
 
-        public ClientContent Extract(string path)
+        public override SyntaxNode VisitParameter(ParameterSyntax node)
         {
-            var content = new ClientContent();
-            var lines = File.ReadAllLines(path);
-
-            for (var i = 0; i < lines.Length; i++)
+            var disagree = disagreements.FirstOrDefault(d => node.Type.ToString().EndsWith(d.TypeName));
+            if (disagree != null)
             {
-                var current = lines[i];
-
-                if (content.Namespace is null && current.StartsWith("namespace "))
-                {
-                    content.Namespace = current;
-                    continue;
-                }
-
-                var stripped = current.Trim();
-
-                //capture Input Output wrappers
-                if (stripped.StartsWith("public partial class") &&
-                    stripped.EndsWithEither("Input", "Output"))
-                {
-                    var prev = lines[i - 1].Trim();
-                    if (!prev.Equals("[System.ServiceModel.MessageContractAttribute(IsWrapped=false)]"))
-                    {
-                        continue;
-                    }
-                    var (resume, typedef) = ExtractClass(i, lines);
-                    i = resume;
-                    content.Types.Add(typedef);
-                    continue;
-                }
-
-                //capture interface
-                if (stripped.StartsWith("public interface"))
-                {
-                    var (resume, typedef) = ExtractInterface(i, lines);
-                    i = resume;
-                    content.Types.Add(typedef);
-                    continue;
-                }
-
-                // capture client
-                if (stripped.StartsWith("public partial class") &&
-                    stripped.Contains("ClientBase<"))
-                {
-                    var (resume, typedef) = ExtractClass(i, lines);
-                    i = resume;
-                    content.Types.Add(typedef);
-                    continue;
-                }
+                var repl = node.Type.ToFullString().Replace(disagree.TypeName, disagree.ClassName);
+                return base.VisitParameter(node.WithType(SyntaxFactory.ParseTypeName(repl)));
             }
-
-            return content;
+            return base.VisitParameter(node);
         }
 
-        int RewindToStart(int i, string[] lines)
+        public override SyntaxNode VisitPropertyDeclaration(PropertyDeclarationSyntax node)
         {
-            var rev = i;
-            while (true)
+            var disagree = disagreements.FirstOrDefault(d => node.Type.ToString().EndsWith(d.TypeName));
+            if (disagree != null)
             {
-                rev--;
-                var stripped = lines[rev].Trim();
-                if (string.IsNullOrWhiteSpace(stripped) || stripped.Equals("{"))
-                {
-                    break;
-                }
+                var repl = node.Type.ToFullString().Replace(disagree.TypeName, disagree.ClassName);
+                return base.VisitPropertyDeclaration(node.WithType(SyntaxFactory.ParseTypeName(repl)));
             }
-            rev++;
-            return rev;
+            return base.VisitPropertyDeclaration(node);
         }
 
-        // Extracts a complete class definition for classes derived from ClientBase
-        (int, TypeDefinition) ExtractClass(int i, string[] lines, bool enforcePascal = false)
+        public override SyntaxNode VisitObjectCreationExpression(ObjectCreationExpressionSyntax node)
         {
-            var rev = RewindToStart(i, lines);
-            var start = rev;
-
-            // at this point rev is lined up on the first attribute line
-            var definition = new List<string>();
-
-            // capture lines until we have captured the declaration line
-            while (true)
+            var disagree = disagreements.FirstOrDefault(d => node.Type.ToString().EndsWith(d.TypeName));
+            if (disagree != null)
             {
-                var trimmed = lines[rev].Trim();
-                if (trimmed.StartsWith("///"))
-                {
-                    definition.Add(lines[rev]);
-                    rev++;
-                    continue;
-                }
-
-                if (trimmed.StartsWith("[") && trimmed.Contains("Attribute("))
-                {
-                    definition.Add(lines[rev]);
-                    rev++;
-                    continue;
-                }
-
-                if (trimmed.StartsWith("public partial class"))
-                {
-                    definition.Add(lines[rev]);
-                    rev++;
-                    break;
-                }
-
-                throw new InvalidOperationException($"Unexpected class content at line: {rev}");
+                var repl = node.Type.ToFullString().Replace(disagree.TypeName, disagree.ClassName);
+                return base.VisitObjectCreationExpression(node.WithType(SyntaxFactory.ParseTypeName(repl)));
             }
-
-            if (!lines[rev].Trim().Equals("{"))
-            {
-                throw new InvalidOperationException($"Unexpected class content at line: {rev}");
-            }
-            // ensure the next line is just a brack and capture it, bracket++
-            definition.Add(lines[rev]);
-            var brackets = 1;
-            rev++;
-
-            // capture lines incrementing/decrementing bracket as we go until its back to 0
-            while (brackets > 0)
-            {
-                var trimmed = lines[rev].Trim();
-                if (trimmed.Equals("{"))
-                {
-                    brackets++;
-                }
-                if (trimmed.Equals("}"))
-                {
-                    brackets--;
-                }
-
-                // if enforcePascal, then issue the correction here first
-                if (enforcePascal)
-                {
-                    //lines[rev] = 
-                }
-
-                definition.Add(lines[rev]);
-                rev++;
-            }
-
-            var end = rev;
-            rev++;
-
-            return (rev, new TypeDefinition
-            {
-                Start = start,
-                End = end,
-                Lines = definition
-            });
+            return base.VisitObjectCreationExpression(node);
         }
 
-        // Extracts a complete definition for public interfaces
-        (int, TypeDefinition) ExtractInterface(int i, string[] lines)
+        public override SyntaxNode VisitVariableDeclaration(VariableDeclarationSyntax node)
         {
-            var rev = RewindToStart(i, lines);
-            var start = rev;
-
-            // at this point rev is lined up on the first attribute line
-            var definition = new List<string>();
-
-            // capture lines until we have captured the declaration line
-            while (true)
+            var disagree = disagreements.FirstOrDefault(d => node.Type.ToString().EndsWith(d.TypeName));
+            if (disagree != null)
             {
-                var trimmed = lines[rev].Trim();
-                if (trimmed.StartsWith("///"))
-                {
-                    definition.Add(lines[rev]);
-                    rev++;
-                    continue;
-                }
-
-                if (trimmed.StartsWith("[") && trimmed.Contains("Attribute("))
-                {
-                    definition.Add(lines[rev]);
-                    rev++;
-                    continue;
-                }
-
-                if (trimmed.StartsWith("public interface"))
-                {
-                    definition.Add(lines[rev]);
-                    rev++;
-                    break;
-                }
-
-                throw new InvalidOperationException($"Unexpected interface content at line: {rev}");
+                var repl = node.Type.ToFullString().Replace(disagree.TypeName, disagree.ClassName);
+                return base.VisitVariableDeclaration(node.WithType(SyntaxFactory.ParseTypeName(repl)));
             }
 
-            if (!lines[rev].Trim().Equals("{"))
-            {
-                throw new InvalidOperationException($"Unexpected interface content at line: {rev}");
-            }
-            // ensure the next line is just a brack and capture it
-            definition.Add(lines[rev]);
-            rev++;
-
-            // capture lines incrementing/decrementing bracket as we go until its back to 0
-            while (true)
-            {
-                if (!lines[rev].Trim().Equals("}"))
-                {
-                    definition.Add(lines[rev]);
-                    rev++;
-                    continue;
-                }
-
-                definition.Add(lines[rev]);
-                break;
-            }
-
-            var end = rev;
-            rev++;
-
-            return (rev, new TypeDefinition
-            {
-                Start = start,
-                End = end,
-                Lines = definition
-            });
+            return base.VisitVariableDeclaration(node);
         }
     }
 
-    public class ClientContent
+    public class ServiceFile
     {
-        public string Namespace { get; set; }
-        public List<TypeDefinition> Types { get; set; } = new List<TypeDefinition>();
+        public NamespaceDeclarationSyntax Namespace { get; set; }
+        public IEnumerable<CSharpSyntaxNode> Types { get; set; }
 
         public override string ToString()
         {
             var b = new StringBuilder(AUTO_GENERATED);
 
-            b.AppendLine(Namespace);
+            b.Append($"namespace {Namespace.Name.ToFullString()}");
             b.AppendLine("{");
 
-            for (int i = 0; i < Types.Count; i++)
+            foreach (var ty in Types)
             {
-                foreach (var line in Types[i].Lines)
-                {
-                    b.AppendLine(line);
-                }
-                if (i < Types.Count - 1)
-                {
-                    b.AppendLine();
-                }
+                b.Append(ty.ToFullString());
             }
+
             b.AppendLine("}");
 
             return b.ToString();
@@ -276,20 +146,5 @@ namespace UWDiff
 
 "
 ;
-    }
-
-    public class TypeDefinition
-    {
-        public int Start { get; set; }
-        public int End { get; set; }
-        public IEnumerable<string> Lines { get; set; }
-    }
-
-    static class StringExtensions
-    {
-        public static bool EndsWithEither(this string test, params string[] endings)
-        {
-            return endings.Any(e => test.EndsWith(e));
-        }
     }
 }

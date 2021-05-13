@@ -38,7 +38,7 @@ namespace UWDiff
                 if (xmlType != null)
                 {
                     var classname = cl.Identifier.Text;
-                    var typename = xmlType.ArgumentList.Arguments.First().ToFullString().Replace("\"", "");
+                    var typename = xmlType.ArgumentList.Arguments.First().ToFullString().Replace("\"", "").Replace("-", "");
 
                     if (!classname.Equals(typename))
                     {

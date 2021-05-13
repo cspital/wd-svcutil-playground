@@ -7898,13 +7898,13 @@ namespace UWD.Lib
         
         [System.ServiceModel.MessageBodyMemberAttribute(Name="Submit_Expense_Report_for_Non-Worker_Request", Namespace="urn:com.workday/bsvc", Order=0)]
         [System.Xml.Serialization.XmlElementAttribute("Submit_Expense_Report_for_Non-Worker_Request")]
-        public UWD.Lib.Submit_Expense_Report_for_NonWorker_RequestType Submit_Expense_Report_for_NonWorker_Request;
+        public UWD.Lib.Submit_Expense_Report_For_Non_Worker_RequestType Submit_Expense_Report_for_NonWorker_Request;
         
         public Submit_Expense_Report_for_NonWorkerInput()
         {
         }
         
-        public Submit_Expense_Report_for_NonWorkerInput(UWD.Lib.Workday_Common_HeaderType Workday_Common_Header, UWD.Lib.Submit_Expense_Report_for_NonWorker_RequestType Submit_Expense_Report_for_NonWorker_Request)
+        public Submit_Expense_Report_for_NonWorkerInput(UWD.Lib.Workday_Common_HeaderType Workday_Common_Header, UWD.Lib.Submit_Expense_Report_For_Non_Worker_RequestType Submit_Expense_Report_for_NonWorker_Request)
         {
             this.Workday_Common_Header = Workday_Common_Header;
             this.Submit_Expense_Report_for_NonWorker_Request = Submit_Expense_Report_for_NonWorker_Request;
@@ -7920,13 +7920,13 @@ namespace UWD.Lib
         
         [System.ServiceModel.MessageBodyMemberAttribute(Name="Submit_Expense_Report_for_Non-Worker_Response", Namespace="urn:com.workday/bsvc", Order=0)]
         [System.Xml.Serialization.XmlElementAttribute("Submit_Expense_Report_for_Non-Worker_Response")]
-        public UWD.Lib.Submit_Expense_Report_for_NonWorker_ResponseType Submit_Expense_Report_for_NonWorker_Response;
+        public UWD.Lib.Submit_Expense_Report_For_Non_Worker_ResponseType Submit_Expense_Report_for_NonWorker_Response;
         
         public Submit_Expense_Report_for_NonWorkerOutput()
         {
         }
         
-        public Submit_Expense_Report_for_NonWorkerOutput(UWD.Lib.Submit_Expense_Report_for_NonWorker_ResponseType Submit_Expense_Report_for_NonWorker_Response)
+        public Submit_Expense_Report_for_NonWorkerOutput(UWD.Lib.Submit_Expense_Report_For_Non_Worker_ResponseType Submit_Expense_Report_for_NonWorker_Response)
         {
             this.Submit_Expense_Report_for_NonWorker_Response = Submit_Expense_Report_for_NonWorker_Response;
         }
@@ -15138,7 +15138,7 @@ namespace UWD.Lib
             return base.Channel.Submit_Expense_Report_for_NonWorkerAsync(request);
         }
         
-        public System.Threading.Tasks.Task<UWD.Lib.Submit_Expense_Report_for_NonWorkerOutput> Submit_Expense_Report_for_NonWorkerAsync(UWD.Lib.Workday_Common_HeaderType Workday_Common_Header, UWD.Lib.Submit_Expense_Report_for_NonWorker_RequestType Submit_Expense_Report_for_NonWorker_Request)
+        public System.Threading.Tasks.Task<UWD.Lib.Submit_Expense_Report_for_NonWorkerOutput> Submit_Expense_Report_for_NonWorkerAsync(UWD.Lib.Workday_Common_HeaderType Workday_Common_Header, UWD.Lib.Submit_Expense_Report_For_Non_Worker_RequestType Submit_Expense_Report_for_NonWorker_Request)
         {
             UWD.Lib.Submit_Expense_Report_for_NonWorkerInput inValue = new UWD.Lib.Submit_Expense_Report_for_NonWorkerInput();
             inValue.Workday_Common_Header = Workday_Common_Header;

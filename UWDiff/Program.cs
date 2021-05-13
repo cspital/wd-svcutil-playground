@@ -21,7 +21,7 @@ namespace UWDiff
                 var tdpar = new TypeDisagreementParser();
                 var tds = tdpar.Parse(MustPath(d, "UWD.Lib.cs"));
 
-                var r = new RoslynClientExtractor(tds);
+                var r = new ClientExtractor(new DisagreementRewriter(tds));
                 var service = r.Extract(MustPath(d, "Service/Reference.cs"));
 
                 Console.WriteLine(service.ToString());
