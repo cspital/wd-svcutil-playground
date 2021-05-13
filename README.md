@@ -28,6 +28,12 @@ dotnet-svcutil Resource_Management.wsdl --outputDir Service --serializer XmlSeri
 cd UWDiff
 
 dotnet run -- -d ../UWD.Lib > ../Output.cs
+
+cp ../Output.cs ../UWD.Lib/Service/Service.cs
+
+cd ../WDTest
+
+dotnet run -- -u user -p pass
 ```
 
 ## TODO
